@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>C-Money</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="bg-dark text-light">
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark bg-black px-4">
+  <span class="navbar-brand mb-0 h1">C-Money</span>
+  <button type="button" class="btn btn-outline-light" onclick="openSettingsModal()">
+    ⚙️ Configurações
+  </button>
+</nav>
+
+<!-- CONTAINER -->
+<div class="container mt-4">
+
+  <!-- HEADER -->
+  <h2 class="text-center mb-4">
+    RESUMO MÊS DE:
+    <span id="currentMonth" class="text-warning"></span>
+  </h2>
+
+  <!-- CARDS -->
+  <div class="row text-center mb-4 g-3">
+    <div class="col-12 col-md-4 col-lg">
+      <div class="card p-3 summary-card summary-card-total">Total gasto no mês<br><span id="totalMonth">R$0</span><br><small class="text-muted" id="totalMonthCount">(0 contas)</small></div>
+    </div>
+    <div class="col-12 col-md-4 col-lg">
+      <div class="card p-3 summary-card summary-card-salary">Salário do mês<br><span id="salaryMonth">R$0</span></div>
+    </div>
+    <div class="col-12 col-md-4 col-lg">
+      <div class="card p-3 summary-card summary-card-balance">Saldo do mês<br><span id="balanceMonth">R$0</span></div>
+    </div>
+    <div class="col"><div class="card p-3">Fixos<br><span id="fixos">R$0</span><br><small class="text-muted" id="fixos_count">(0)</small></div></div>
+    <div class="col"><div class="card p-3">Variáveis<br><span id="variaveis">R$0</span><br><small class="text-muted" id="variaveis_count">(0)</small></div></div>
+    <div class="col"><div class="card p-3">Não essenciais<br><span id="nao">R$0</span><br><small class="text-muted" id="nao_count">(0)</small></div></div>
+    <div class="col"><div class="card p-3">Assinaturas<br><span id="assinaturas">R$0</span><br><small class="text-muted" id="assinaturas_count">(0)</small></div></div>
+    <div class="col"><div class="card p-3">Eventuais<br><span id="eventuais">R$0</span><br><small class="text-muted" id="eventuais_count">(0)</small></div></div>
+  </div>
+
+  <hr>
+
+  <div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-md-3">
+      <h5>Mês / Ano</h5>
+      <input type="month" id="monthPicker" class="form-control mb-3">
+    </div>
+
+    <!-- TABELA -->
+    <div class="col-md-9">
+
+      <div class="card bg-black border-secondary mb-3 text-white">
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <h5 class="mb-1">Contas do mês</h5>
+            <small class="text-white">Adicione novas contas.</small>
+          </div>
+
+          <button type="button" class="btn btn-warning" onclick="openModal()">
+            Adicionar Conta
+          </button>
+        </div>
+      </div>
+
+      <table class="table table-dark table-hover">
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Tipo</th>
+            <th>Pagamento</th>
+            <th>Data</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="transactionsTable"></tbody>
+      </table>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL - TRANSAÇÃO -->
+<div class="modal fade" id="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header">
+        <h5 id="transactionModalTitle">Nova Conta</h5>
+      </div>
+
+      <div class="modal-body">
+
+        <input class="form-control mb-2" id="desc" placeholder="Descrição">
+        <input class="form-control mb-2" id="value" type="number" placeholder="Valor">
+
+        <select class="form-control mb-2" id="type">
+          <option>fixos</option>
+          <option>variaveis_essenciais</option>
+          <option>nao_essenciais</option>
+          <option>assinaturas</option>
+          <option>eventuais</option>
+        </select>
+
+        <select class="form-control mb-2" id="payment">
+          <option>Pix</option>
+          <option>Cartão</option>
+          <option>Dinheiro</option>
+        </select>
+
+        <input class="form-control" id="date" type="date">
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-warning" onclick="saveTransaction()">Salvar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL - CONFIGURAÇÕES -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header">
+        <h5>⚙️ Configurações</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" for="monthlySalaryInput">Salário mensal</label>
+          <input class="form-control" id="monthlySalaryInput" type="number" min="0" step="0.01" placeholder="Ex: 5000">
+          <small class="text-muted">Esse valor será projetado para o mês anterior, atual e próximo mês.</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="creditCardClosingDayInput">Dia de fechamento do cartão</label>
+          <input class="form-control" id="creditCardClosingDayInput" type="number" min="1" max="31" step="1" placeholder="Ex: 4">
+          <small class="text-muted">Compras no cartão até esse dia entram no mês anterior.</small>
+        </div>
+
+        <div class="mb-3">
+          <button type="button" class="btn btn-info w-100" onclick="openRecurringModal()">
+            💰 Gerenciar Contas Recorrentes
+          </button>
+        </div>
+
+        <div class="mb-3">
+          <button type="button" class="btn btn-primary w-100" onclick="openSalaryMonthsModal()">
+            📅 Editar Salários Mensais
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-warning" onclick="saveSettings()">Salvar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL - CONTAS RECORRENTES -->
+<div class="modal fade" id="recurringModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header">
+        <h5>💰 Contas Recorrentes</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <button type="button" class="btn btn-success mb-3" onclick="openAddRecurringModal()">
+          + Adicionar Conta Recorrente
+        </button>
+
+        <div id="recurringList" class="list-group">
+          <p class="text-muted">Nenhuma conta recorrente cadastrada</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL - ADICIONAR CONTA RECORRENTE -->
+<div class="modal fade" id="addRecurringModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header">
+        <h5>Adicionar Conta Recorrente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input class="form-control mb-2" id="recurringDesc" placeholder="Descrição">
+        <input class="form-control mb-2" id="recurringValue" type="number" placeholder="Valor">
+
+        <select class="form-control mb-2" id="recurringType">
+          <option>fixos</option>
+          <option>variaveis_essenciais</option>
+          <option>nao_essenciais</option>
+          <option>assinaturas</option>
+          <option>eventuais</option>
+        </select>
+
+        <select class="form-control mb-2" id="recurringPayment">
+          <option>Pix</option>
+          <option>Cartão</option>
+          <option>Dinheiro</option>
+        </select>
+
+        <label class="form-label">Dia do mês</label>
+        <input class="form-control mb-2" id="recurringDay" type="number" min="1" max="31" placeholder="1-31">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" onclick="saveRecurringTransaction()">Salvar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL - EDITAR SALÁRIOS MENSAIS -->
+<div class="modal fade" id="salaryMonthsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header">
+        <h5>📅 Editar Salários Mensais</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" id="salaryMonthsContainer">
+        <p class="text-muted">Carregando...</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
