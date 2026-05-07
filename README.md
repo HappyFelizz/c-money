@@ -21,7 +21,7 @@ Um aplicativo web para gerenciamento de transações financeiras pessoais com su
 
 1. **Clone o repositório:**
 ```bash
-git clone https://github.com/seu-usuario/c-money.git
+git clone https://github.com/HappyFelizz/c-money.git
 cd c-money
 ```
 
@@ -157,7 +157,3 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 👤 Autor
 
 Luis Araujo - (Happy) / luis_gdm@outlook.com
-
-## 📞 Suporte
-
-Se tiver dúvidas ou encontrar problemas, abra uma issue no repositório.
