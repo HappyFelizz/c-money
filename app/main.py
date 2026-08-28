@@ -1,9 +1,18 @@
-from flask import Flask, render_template
+import os
+
+from flask import Flask
+try:
+    from flask_cors import CORS
+except ImportError:
+    CORS = None
+from app.database import init_db as _database_schema
 from app.routes.home import home_route
 from app.routes.transaction_routes import transaction_bp
 from app.routes.recurring_routes import recurring_bp
 
 app = Flask(__name__)
+if CORS:
+    CORS(app, origins=os.getenv("FRONTEND_URL", "http://localhost:5173").split(","))
 
 app.register_blueprint(home_route)
 app.register_blueprint(transaction_bp)

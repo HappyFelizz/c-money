@@ -1,4 +1,6 @@
 from app.database.db import get_connection
+from app.services.payment_method_service import ensure_payment_methods_table
+from app.services.income_service import ensure_income_table
 
 conn = get_connection()
 cursor = conn.cursor()
@@ -13,6 +15,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     date DATE NOT NULL,
     reference_year INTEGER,
     reference_month INTEGER,
+    recurring_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """)
@@ -56,5 +59,8 @@ CREATE TABLE IF NOT EXISTS salary_projection (
 
 conn.commit()
 conn.close()
+
+ensure_payment_methods_table()
+ensure_income_table()
 
 print("Banco criado com sucesso!")

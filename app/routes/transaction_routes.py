@@ -15,8 +15,84 @@ from app.services.salary_service import (
 )
 from app.database.db import get_connection
 from app.services.validations import validate_transaction
+from app.services.payment_method_service import (
+    add_payment_method,
+    delete_payment_method,
+    get_payment_methods,
+    update_payment_method,
+)
+from app.services.income_service import create_income, delete_income, get_income_for_month, update_income
 
 transaction_bp = Blueprint("transactions", __name__)
+
+
+@transaction_bp.route("/income/<int:year>/<int:month>", methods=["GET"])
+def list_income(year, month):
+    return jsonify(get_income_for_month(year, month)), 200
+
+
+@transaction_bp.route("/income", methods=["POST"])
+def add_income():
+    data = request.get_json(silent=True) or {}
+    try:
+        income_id = create_income(data)
+        return jsonify({"ok": True, "id": income_id}), 201
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@transaction_bp.route("/income/<int:income_id>", methods=["DELETE"])
+def remove_income(income_id):
+    delete_income(income_id)
+    return jsonify({"ok": True}), 200
+
+
+@transaction_bp.route("/income/<int:income_id>", methods=["PUT"])
+def edit_income(income_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        update_income(income_id, data)
+        return jsonify({"ok": True}), 200
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@transaction_bp.route("/settings/payment-methods", methods=["GET"])
+def list_payment_methods():
+    return jsonify(get_payment_methods()), 200
+
+
+@transaction_bp.route("/settings/payment-methods", methods=["POST"])
+def create_payment_method():
+    data = request.get_json(silent=True) or {}
+    try:
+        method = add_payment_method(
+            data.get("name"),
+            data.get("method_type", "other"),
+            data.get("closing_day"),
+        )
+        return jsonify(method), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@transaction_bp.route("/settings/payment-methods/<string:code>", methods=["DELETE"])
+def remove_payment_method(code):
+    try:
+        delete_payment_method(code)
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@transaction_bp.route("/settings/payment-methods/<string:code>", methods=["PUT"])
+def edit_payment_method(code):
+    data = request.get_json(silent=True) or {}
+    try:
+        update_payment_method(code, data.get("closing_day"))
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 @transaction_bp.route("/transactions", methods=["POST"])
 def add_transaction():

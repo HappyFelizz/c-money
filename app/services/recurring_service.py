@@ -1,6 +1,6 @@
 from app.database.db import get_connection
-from datetime import datetime, timedelta
-from app.services.transaction_service import create_transaction
+from datetime import date, datetime, timedelta
+from app.services.transaction_service import create_transaction, refresh_all_transaction_references
 import calendar
 
 def create_recurring_transaction(data):
@@ -51,6 +51,11 @@ def update_recurring_transaction(recurring_id, data):
     conn = get_connection()
     cursor = conn.cursor()
 
+    previous = cursor.execute(
+        "SELECT description, value, type, payment_method FROM recurring_transactions WHERE id = ?",
+        (recurring_id,),
+    ).fetchone()
+
     cursor.execute("""
         UPDATE recurring_transactions
         SET description = ?, value = ?, type = ?, payment_method = ?, day_of_month = ?
@@ -63,6 +68,38 @@ def update_recurring_transaction(recurring_id, data):
         data["day_of_month"],
         recurring_id
     ))
+
+    conn.commit()
+
+    # Atualiza apenas ocorrências futuras vinculadas a esta recorrência.
+    cursor.execute(
+        """
+        UPDATE transactions
+        SET payment_method = ?
+        WHERE recurring_id = ? AND date >= ?
+        """,
+        (data["payment_method"], recurring_id, date.today().isoformat()),
+    )
+
+    # Compatibilidade com ocorrências geradas antes da coluna recurring_id.
+    if previous:
+        cursor.execute(
+            """
+            UPDATE transactions
+            SET payment_method = ?
+            WHERE recurring_id IS NULL
+              AND description = ? AND value = ? AND type = ?
+              AND payment_method = ? AND date >= ?
+            """,
+            (
+                data["payment_method"],
+                previous["description"],
+                previous["value"],
+                previous["type"],
+                previous["payment_method"],
+                date.today().isoformat(),
+            ),
+        )
 
     conn.commit()
     conn.close()
@@ -94,6 +131,28 @@ def generate_recurring_transactions():
 
             date_str = f"{year:04d}-{month:02d}-{day_of_month:02d}"
 
+            conn = get_connection()
+            conn.execute(
+                """
+                UPDATE transactions
+                SET payment_method = ?, recurring_id = ?
+                WHERE description = ? AND value = ? AND type = ?
+                  AND date = ?
+                  AND (recurring_id = ? OR recurring_id IS NULL)
+                """,
+                (
+                    rec["payment_method"],
+                    rec["id"],
+                    rec["description"],
+                    rec["value"],
+                    rec["type"],
+                    date_str,
+                    rec["id"],
+                ),
+            )
+            conn.commit()
+            conn.close()
+
             # Verificar se a transação já existe
             conn = get_connection()
             cursor = conn.cursor()
@@ -104,7 +163,8 @@ def generate_recurring_transactions():
                 AND value = ?
                 AND date = ?
                 AND type = ?
-            """, (rec["description"], rec["value"], date_str, rec["type"]))
+                AND (recurring_id = ? OR recurring_id IS NULL)
+            """, (rec["description"], rec["value"], date_str, rec["type"], rec["id"]))
 
             existing = cursor.fetchone()
             conn.close()
@@ -116,5 +176,8 @@ def generate_recurring_transactions():
                     "value": rec["value"],
                     "type": rec["type"],
                     "payment_method": rec["payment_method"],
-                    "date": date_str
+                    "date": date_str,
+                    "recurring_id": rec["id"],
                 })
+
+    refresh_all_transaction_references()

@@ -1,3 +1,10 @@
+from app.services.payment_method_service import get_payment_methods
+
+
+def _valid_payment_method(value):
+    return value in {method["code"] for method in get_payment_methods()}
+
+
 def validate_transaction(data):
     errors = []
 
@@ -16,7 +23,7 @@ def validate_transaction(data):
     ]:
         errors.append("Tipo inválido")
 
-    if data.get("payment_method") not in ["pix", "cartao", "dinheiro"]:
+    if not _valid_payment_method(data.get("payment_method")):
         errors.append("Forma de pagamento inválida")
 
     if not data.get("date"):
@@ -43,7 +50,7 @@ def validate_recurring_transaction(data):
     ]:
         errors.append("Tipo inválido")
 
-    if data.get("payment_method") not in ["pix", "cartao", "dinheiro"]:
+    if not _valid_payment_method(data.get("payment_method")):
         errors.append("Forma de pagamento inválida")
 
     if data.get("day_of_month") is None or data["day_of_month"] < 1 or data["day_of_month"] > 31:

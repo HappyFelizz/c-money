@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.database.db import get_connection
+from app.database.db import get_connection, get_table_columns
 
 
 def ensure_salary_tables():
@@ -15,8 +15,7 @@ def ensure_salary_tables():
         )
     """)
 
-    cursor.execute("PRAGMA table_info(salary_settings)")
-    columns = {row["name"] for row in cursor.fetchall()}
+    columns = get_table_columns(conn, "salary_settings")
 
     if "credit_card_closing_day" not in columns:
         cursor.execute("""
@@ -78,10 +77,6 @@ def get_financial_settings():
     }
 
 
-def get_monthly_salary():
-    return get_financial_settings()["monthly_salary"]
-
-
 def get_credit_card_closing_day():
     return get_financial_settings()["credit_card_closing_day"]
 
@@ -124,15 +119,10 @@ def save_financial_settings(monthly_salary, credit_card_closing_day):
     generate_salary_projection(monthly_salary)
 
 
-def save_monthly_salary(monthly_salary):
-    credit_card_closing_day = get_credit_card_closing_day()
-    save_financial_settings(monthly_salary, credit_card_closing_day)
-
-
 def get_salary_for_month(year, month):
     ensure_salary_tables()
 
-    monthly_salary = get_monthly_salary()
+    monthly_salary = get_financial_settings()["monthly_salary"]
 
     if monthly_salary > 0:
         generate_salary_projection(monthly_salary)

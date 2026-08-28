@@ -1,6 +1,6 @@
 # C-Money 💰
 
-Um aplicativo web para gerenciamento de transações financeiras pessoais com suporte a transações recorrentes e controle de salário.
+Aplicativo fullstack para gerenciamento de transações financeiras pessoais, com suporte a transações recorrentes e controle de salário.
 
 ## 🚀 Funcionalidades
 
@@ -9,7 +9,9 @@ Um aplicativo web para gerenciamento de transações financeiras pessoais com su
 - ✅ Transações recorrentes automáticas
 - ✅ Cálculo de saldo mensal
 - ✅ Controle de salário e projeções
+- ✅ Cadastro de entradas extras por data e descrição
 - ✅ Diferentes métodos de pagamento (PIX, Cartão, Dinheiro)
+- ✅ Formas de pagamento personalizadas (ex.: Cartão Santander, Boleto)
 - ✅ Referência inteligente por mês de fatura (cartão de crédito)
 
 ## 📋 Requisitos
@@ -39,7 +41,7 @@ source venv/bin/activate
 
 No Windows:
 ```bash
-venv\Scripts\activate
+.\venv\Scripts\Activate.ps1
 ```
 
 4. **Instale as dependências:**
@@ -52,13 +54,44 @@ pip install -r requirements.txt
 python -m app.database.init_db
 ```
 
+6. **Instale as dependências do frontend:**
+```bash
+cd frontend
+npm install
+cd ..
+```
+
 ## 🏃 Como Executar
 
+Inicie o backend em um terminal:
 ```bash
 python -m flask --app app.main run
 ```
 
-A aplicação estará disponível em `http://localhost:5000`
+Em outro terminal, inicie o frontend:
+```bash
+cd frontend
+npm run dev
+```
+
+A interface estará disponível em `http://localhost:5173` e a API em `http://localhost:5000`.
+
+## 🌐 Deploy
+
+O backend pode ser publicado na Render usando o arquivo `render.yaml`. Ele usa Gunicorn e PostgreSQL para manter os dados de forma persistente. Na Render, configure `DATABASE_URL` com a conexão do banco e `FRONTEND_URL` com a URL pública do frontend.
+
+Para publicar o frontend, crie um projeto na Vercel apontando para a pasta `frontend`, use `npm run build` como comando de build e configure `VITE_API_URL` com a URL pública da API.
+
+Os arquivos `.env.example` mostram as variáveis necessárias. Nunca publique arquivos `.env` ou credenciais no repositório.
+
+### Migrar o banco local
+
+Depois de criar o PostgreSQL e definir `DATABASE_URL`, execute na raiz do projeto:
+```bash
+python -m app.database.migrate_sqlite_to_postgres
+```
+
+O comando cria o esquema PostgreSQL, copia os dados do SQLite local e preserva os IDs para manter as relações entre recorrências e transações.
 
 ## 🧪 Testes
 
@@ -77,7 +110,7 @@ c-money/
 │   ├── database/
 │   │   ├── db.py           # Conexão com banco de dados
 │   │   └── init_db.py      # Schema do banco
-│   ├── models/             # (Modelos ORM - future expansion)
+│   ├── models/             # Reservado para modelos futuros
 │   ├── routes/             # Blueprints Flask
 │   │   ├── home.py
 │   │   ├── transaction_routes.py
@@ -87,19 +120,25 @@ c-money/
 │   │   ├── recurring_service.py
 │   │   ├── salary_service.py
 │   │   └── validations.py
-│   ├── static/             # Arquivos estáticos
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── images/
-│   └── templates/          # Templates HTML
+│   └── __init__.py
+├── frontend/               # React + Vite
+│   ├── src/
+│   │   ├── components/     # Componentes da interface
+│   │   ├── services/       # Comunicação com a API
+│   │   ├── App.jsx
+│   │   └── App.css
+│   ├── package.json
+│   └── vite.config.js
 ├── tests/                  # Testes
 ├── requirements.txt        # Dependências do projeto
 └── README.md              # Este arquivo
 ```
 
-## 🔧 Configuração
+## 🔧 Arquitetura
 
-As configurações podem ser ajustadas diretamente no código. Futuramente, considere usar um arquivo `.env` com variáveis de ambiente.
+O Flask funciona como API e gerencia as regras de negócio e o banco SQLite. O React, executado pelo Vite, fornece a interface e consome os endpoints do Flask por meio do proxy de desenvolvimento.
+
+As formas de pagamento podem ser gerenciadas em **Configurações**. Os métodos padrão são Pix, Cartão, Dinheiro e Boleto. Novos métodos podem ser cadastrados como “Outro” ou “Cartão de crédito”; cartões personalizados continuam usando o dia de fechamento configurado.
 
 ## 📝 Uso da API
 
@@ -140,15 +179,6 @@ Content-Type: application/json
 ```bash
 GET /recurring
 ```
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor:
-1. Faça um Fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/FeatureTopDemais`)
-3. Commit suas mudanças (`git commit -m 'Add some FeatureTopDemais'`)
-4. Push para a branch (`git push origin feature/FeatureTopDemais`)
-5. Abra um Pull Request
 
 ## 📄 Licença
 

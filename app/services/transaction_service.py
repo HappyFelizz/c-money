@@ -1,22 +1,31 @@
-from app.database.db import get_connection
+from app.database.db import get_connection, get_table_columns, is_postgres
 from datetime import datetime
 from app.services.salary_service import get_credit_card_closing_day
+from app.services.payment_method_service import ensure_payment_methods_table, get_payment_method, is_credit_card_method
 
 
 def ensure_transaction_reference_columns():
+    ensure_payment_methods_table()
     closing_day = get_credit_card_closing_day()
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("PRAGMA table_info(transactions)")
-    existing_columns = {row["name"] for row in cursor.fetchall()}
+    existing_columns = get_table_columns(conn, "transactions")
 
     if "reference_year" not in existing_columns:
         cursor.execute("ALTER TABLE transactions ADD COLUMN reference_year INTEGER")
 
     if "reference_month" not in existing_columns:
         cursor.execute("ALTER TABLE transactions ADD COLUMN reference_month INTEGER")
+
+    if "recurring_id" not in existing_columns:
+        cursor.execute("ALTER TABLE transactions ADD COLUMN recurring_id INTEGER")
+
+    if is_postgres():
+        conn.commit()
+        conn.close()
+        return
 
     # Backfill para registros antigos sem referência de competência.
     cursor.execute(
@@ -43,10 +52,12 @@ def ensure_transaction_reference_columns():
 
 
 def get_reference_period(date_str, payment_method, closing_day=None):
-    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-    closing_day = closing_day or get_credit_card_closing_day()
+    date_obj = date_str if hasattr(date_str, "day") else datetime.strptime(str(date_str), "%Y-%m-%d")
+    if is_credit_card_method(payment_method):
+        method = get_payment_method(payment_method)
+        closing_day = closing_day or (method and method["closing_day"]) or get_credit_card_closing_day()
 
-    if payment_method == "cartao" and date_obj.day < closing_day:
+    if is_credit_card_method(payment_method) and date_obj.day < closing_day:
         if date_obj.month == 1:
             return date_obj.year - 1, 12
 
@@ -94,8 +105,8 @@ def create_transaction(data):
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO transactions (description, value, type, payment_method, date, reference_year, reference_month)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (description, value, type, payment_method, date, reference_year, reference_month, recurring_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["description"],
         data["value"],
@@ -104,6 +115,7 @@ def create_transaction(data):
         data["date"],
         reference_year,
         reference_month,
+        data.get("recurring_id"),
     ))
 
     conn.commit()
