@@ -78,15 +78,15 @@ A interface estará disponível em `http://localhost:5173` e a API em `http://lo
 
 ## 🌐 Deploy
 
-O backend pode ser publicado na Render usando o arquivo `render.yaml`. Ele usa Gunicorn e PostgreSQL para manter os dados de forma persistente. Na Render, configure `DATABASE_URL` com a conexão do banco e `FRONTEND_URL` com a URL pública do frontend.
+O backend pode ser publicado no Azure App Service usando Gunicorn e PostgreSQL. No Azure, configure `DATABASE_URL` com a conexão do banco e `FRONTEND_URL` com a URL pública do GitHub Pages.
 
-Para publicar o frontend, crie um projeto na Vercel apontando para a pasta `frontend`, use `npm run build` como comando de build e configure `VITE_API_URL` com a URL pública da API.
+Para publicar o frontend, use o workflow `.github/workflows/deploy-pages.yml`. No repositório GitHub, configure Pages com **Source: GitHub Actions** e crie o secret `VITE_API_URL` com a URL pública da API Azure.
 
 Os arquivos `.env.example` mostram as variáveis necessárias. Nunca publique arquivos `.env` ou credenciais no repositório.
 
-### Migrar o banco local
+### Migrar um banco existente (opcional)
 
-Depois de criar o PostgreSQL e definir `DATABASE_URL`, execute na raiz do projeto:
+Como o deploy usa um PostgreSQL novo e vazio, não execute este comando no fluxo normal. Ele só deve ser usado se você decidir copiar os dados do SQLite local:
 ```bash
 python -m app.database.migrate_sqlite_to_postgres
 ```
