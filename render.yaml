@@ -12,12 +12,3 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-
-  - type: static
-    name: c-money-frontend
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    autoDeploy: true
-    envVars:
-      - key: VITE_API_URL
-        sync: false
