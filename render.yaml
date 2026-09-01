@@ -2,7 +2,6 @@ services:
   - type: web
     name: c-money-api
     env: python
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT app.main:app
     autoDeploy: true
@@ -14,12 +13,10 @@ services:
       - key: FRONTEND_URL
         sync: false
 
-  - type: web
+  - type: static
     name: c-money-frontend
-    env: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
+    staticPublishPath: ./frontend/dist
     autoDeploy: true
     envVars:
       - key: VITE_API_URL
